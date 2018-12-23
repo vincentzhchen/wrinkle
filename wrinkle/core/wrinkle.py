@@ -2,14 +2,11 @@ import itertools
 import pandas as pd
 
 
-COMPARISON_COL = "COMPARISON_COL"
-
-
 class Diff(object):
     def __init__(self, lhs, rhs, on, lhs_name="LHS", rhs_name="RHS",
                  comparison_col_name="COMPARISON_COL", *args, **kwargs):
-        self.lhs = lhs
-        self.rhs = rhs
+        self.lhs = lhs.copy(deep=True)
+        self.rhs = rhs.copy(deep=True)
         self.input_key = on
         self.key = self.input_key + [comparison_col_name]
         self.lhs_name = lhs_name
@@ -46,8 +43,11 @@ class Diff(object):
         """
         unique_idx = set(self.lhs.index.tolist() + self.rhs.index.tolist())
         value_cols = list(set(self.lhs.columns).difference(self.input_key))
-        x_prod_idx = tuple(list(k[0]) + [k[1]] for k in
-                           list(itertools.product(unique_idx, value_cols)))
+        if len(self.input_key) == 1:
+            x_prod_idx = tuple(list(itertools.product(unique_idx, value_cols)))
+        else:
+            x_prod_idx = tuple(list(k[0]) + [k[1]] for k in
+                               list(itertools.product(unique_idx, value_cols)))
         df = pd.MultiIndex.from_tuples(
             x_prod_idx, names=self.key).to_frame()
         df = df.sort_index()  # speed up lex sort
@@ -145,4 +145,4 @@ class Diff(object):
             df.loc[df["IS_DUPLICATED"] & df[
                 self.rhs_name].notnull(), c] = f"DUPLICATED_ON_{self.rhs_name}"
 
-        return df[self.output_key]
+        return df[self.output_key].set_index(self.input_key)
