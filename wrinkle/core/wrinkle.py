@@ -151,6 +151,9 @@ class Diff(object):
         if len(self.input_key) == 1:
             if self.df.index.name != self.input_key[0]:
                 self.df.set_index(self.input_key, inplace=True)
+        else:
+            if self.df.index.names != self.input_key:
+                self.df.set_index(self.input_key, inplace=True)
 
     def reset_index(self):
         self.df.reset_index(inplace=True)
