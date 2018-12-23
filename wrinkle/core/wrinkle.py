@@ -146,3 +146,11 @@ class Diff(object):
                 self.rhs_name].notnull(), c] = f"DUPLICATED_ON_{self.rhs_name}"
 
         return df[self.output_key].set_index(self.input_key)
+
+    def set_index(self):
+        if len(self.input_key) == 1:
+            if self.df.index.name != self.input_key[0]:
+                self.df.set_index(self.input_key, inplace=True)
+
+    def reset_index(self):
+        self.df.reset_index(inplace=True)
