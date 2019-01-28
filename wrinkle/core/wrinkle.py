@@ -35,6 +35,9 @@ class Diff(object):
         # this is for displaying in IPython
         return self.df._repr_html_()
 
+    def to_frame(self):
+        return self.df
+
     def _set_value_cols(self):
         self.value = list(set(self.lhs.columns).intersection(
             self.rhs.columns))
@@ -93,8 +96,11 @@ class Diff(object):
                                        df.loc[not_null, self.lhs_name] - 1
         df.loc[not_null, "ABS_PCT_DIFF"] = df.loc[not_null, "PCT_DIFF"].abs()
 
+        # since NaN was not filled, ABS_PCT_DIFF has nulls -- mark with -1
+        df["ABS_PCT_DIFF"].fillna(-1, inplace=True)
+
         # remove all records with no differences
-        df = df.loc[df["ABS_PCT_DIFF"] > 0]
+        df = df.loc[df["ABS_PCT_DIFF"] != 0]  # this keeps the NaN comparisons
 
         df = df.sort_values(["ABS_PCT_DIFF"], ascending=False)
         return df
