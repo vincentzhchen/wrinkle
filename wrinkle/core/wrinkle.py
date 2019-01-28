@@ -5,24 +5,27 @@ import pandas as pd
 class Diff(object):
     def __init__(self, lhs, rhs, on, lhs_name="LHS", rhs_name="RHS",
                  comparison_col_name="COMPARISON_COL", *args, **kwargs):
+
+        # setup LHS and RHS dataframes
         self.lhs = lhs.copy(deep=True)
         self.rhs = rhs.copy(deep=True)
+        if self.lhs.index.name != on:
+            self.lhs.set_index(on, inplace=True)
+
+        if self.rhs.index.name != on:
+            self.rhs.set_index(on, inplace=True)
+
+        # setup keys and values
         self.input_key = on
         self.key = self.input_key + [comparison_col_name]
         self.lhs_name = lhs_name
         self.rhs_name = rhs_name
         self.diff_key = ["DIFF", "ABS_DIFF", "PCT_DIFF", "ABS_PCT_DIFF"]
-        self.output_key = self.key + [self.lhs_name,
-                                      self.rhs_name] + self.diff_key
+        self.output_key = self.key + [lhs_name, rhs_name] + self.diff_key
+        self.value = list(set(self.lhs.columns).intersection(
+            self.rhs.columns))
 
-        if self.lhs.index.name != self.input_key:
-            self.lhs.set_index(self.input_key, inplace=True)
-
-        if self.rhs.index.name != self.input_key:
-            self.rhs.set_index(self.input_key, inplace=True)
-
-        self._set_value_cols()
-
+        # create diff on instantiation
         self.df = self.construct_diff_df()
 
     def __str__(self):
@@ -37,10 +40,6 @@ class Diff(object):
 
     def to_frame(self):
         return self.df
-
-    def _set_value_cols(self):
-        self.value = list(set(self.lhs.columns).intersection(
-            self.rhs.columns))
 
     def _construct_master_index_df(self):
         """Helper function to construct unique index for the diff dataframe.
