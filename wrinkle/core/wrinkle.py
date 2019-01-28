@@ -95,6 +95,8 @@ class Diff(object):
 
         # remove all records with no differences
         df = df.loc[df["ABS_PCT_DIFF"] > 0]
+
+        df = df.sort_values(["ABS_PCT_DIFF"], ascending=False)
         return df
 
     def _diff_non_numeric(self, df):
@@ -113,12 +115,13 @@ class Diff(object):
         return df
 
     def _generate_diffs(self, df):
+        # NaN != NaN so if both sides are NaN, drop the record
         df.dropna(subset=[self.lhs_name, self.rhs_name],
                   how="all", inplace=True)
-        numeric, non_numeric = self._split_out_numeric_values(df)
 
+        # handle numeric values and strings differently
+        numeric, non_numeric = self._split_out_numeric_values(df)
         numeric = self._diff_numeric(df=numeric)
-        numeric = numeric.sort_values(["ABS_PCT_DIFF"], ascending=False)
         non_numeric = self._diff_non_numeric(df=non_numeric)
 
         df = pd.concat([numeric, non_numeric], ignore_index=True)
