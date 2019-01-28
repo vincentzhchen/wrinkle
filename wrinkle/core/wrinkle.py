@@ -11,8 +11,9 @@ class Diff(object):
         self.key = self.input_key + [comparison_col_name]
         self.lhs_name = lhs_name
         self.rhs_name = rhs_name
-        self.output_key = self.key + [self.lhs_name, self.rhs_name] + \
-                          ["DIFF", "ABS_DIFF", "PCT_DIFF", "ABS_PCT_DIFF"]
+        self.diff_key = ["DIFF", "ABS_DIFF", "PCT_DIFF", "ABS_PCT_DIFF"]
+        self.output_key = self.key + [self.lhs_name,
+                                      self.rhs_name] + self.diff_key
 
         if self.lhs.index.name != self.input_key:
             self.lhs.set_index(self.input_key, inplace=True)
@@ -92,6 +93,8 @@ class Diff(object):
                                        df.loc[not_null, self.lhs_name] - 1
         df.loc[not_null, "ABS_PCT_DIFF"] = df.loc[not_null, "PCT_DIFF"].abs()
 
+        # remove all records with no differences
+        df = df.loc[df["ABS_PCT_DIFF"] > 0]
         return df
 
     def _diff_non_numeric(self, df):
@@ -100,17 +103,18 @@ class Diff(object):
         TODO: maybe calculate string difference here
 
         """
-        df["DIFF"] = df["ABS_DIFF"] = df["PCT_DIFF"] = df["ABS_PCT_DIFF"] = \
-            df[self.lhs_name] == df[self.rhs_name]
-        df = df.loc[~df["DIFF"]]
-        result = df.loc[:, self.lhs_name] + " <> " + df.loc[:, self.rhs_name]
-        df.loc[:, "DIFF"] = result
-        df.loc[:, "ABS_DIFF"] = result
-        df.loc[:, "PCT_DIFF"] = result
-        df.loc[:, "ABS_PCT_DIFF"] = result
+        for c in self.diff_key:
+            df.loc[df[self.lhs_name] != df[self.rhs_name],
+                   c] = df[self.lhs_name].fillna("MISSING") + " <> " + \
+                        df[self.rhs_name].fillna("MISSING")
+
+        # remove all records with no differences
+        df = df.loc[df["ABS_PCT_DIFF"].notnull()]
         return df
 
     def _generate_diffs(self, df):
+        df.dropna(subset=[self.lhs_name, self.rhs_name],
+                  how="all", inplace=True)
         numeric, non_numeric = self._split_out_numeric_values(df)
 
         numeric = self._diff_numeric(df=numeric)
