@@ -159,13 +159,21 @@ class Diff(object):
 
         return df[self.output_key].set_index(self.input_key)
 
-    def set_index(self):
-        if len(self.input_key) == 1:
-            if self.df.index.name != self.input_key[0]:
-                self.df.set_index(self.input_key, inplace=True)
-        else:
-            if self.df.index.names != self.input_key:
-                self.df.set_index(self.input_key, inplace=True)
+    def to_excel(self, path, reset_index=True):
+        writer = pd.ExcelWriter(path=path,
+                                date_format="YYYY-MM-DD",
+                                datetime_format="YYYY-MM-DD")
 
-    def reset_index(self):
-        self.df.reset_index(inplace=True)
+        df = self.df
+        lhs = self.lhs
+        rhs = self.rhs
+
+        if reset_index:
+            df = self.df.reset_index()
+            lhs = self.lhs.reset_index()
+            rhs = self.rhs.reset_index()
+
+        df.to_excel(writer, sheet_name="DIFF", index=False)
+        lhs.to_excel(writer, sheet_name=self.lhs_name, index=False)
+        rhs.to_excel(writer, sheet_name=self.rhs_name, index=False)
+        writer.save()
